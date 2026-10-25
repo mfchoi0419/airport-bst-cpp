@@ -1,0 +1,15 @@
+# Compiled executables
+MiniProject2
+*.out
+*.o
+
+# macOS files
+.DS_Store
+
+# Generated traversal files
+inorder.txt
+preorder.txt
+preorder_reconstructed.txt
+
+# Temporary files
+*.log
