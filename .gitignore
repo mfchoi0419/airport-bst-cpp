@@ -13,3 +13,13 @@ preorder_reconstructed.txt
 
 # Temporary files
 *.log
+
+# Compiled executables
+/MP2
+/src/MP2
+
+# macOS
+.DS_Store
+# Compiled executables
+MP2
+src/MP2
