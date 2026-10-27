@@ -3,7 +3,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <queue>
 #include <algorithm>
 #include <chrono>
 #include <random>
@@ -44,6 +43,178 @@ public:
     }
 };
 
+class AirportQueue
+{
+private:
+    struct QueueNode
+    {
+        Airport* data;
+        int depth;
+        QueueNode* next;
+
+        QueueNode(Airport* airport, int d)
+        {
+            data = airport;
+            depth = d;
+            next = nullptr;
+        }
+    };
+
+    QueueNode* frontNode;
+    QueueNode* rearNode;
+    int count;
+
+public:
+    AirportQueue()
+    {
+        frontNode = nullptr;
+        rearNode = nullptr;
+        count = 0;
+    }
+
+    ~AirportQueue()
+    {
+        while (!isEmpty())
+        {
+            dequeue();
+        }
+    }
+
+    void enqueue(Airport* airport, int depth = 0)
+    {
+        QueueNode* newNode = new QueueNode(airport, depth);
+
+        if (rearNode == nullptr)
+        {
+            frontNode = newNode;
+            rearNode = newNode;
+        }
+        else
+        {
+            rearNode->next = newNode;
+            rearNode = newNode;
+        }
+
+        count++;
+    }
+
+    Airport* dequeue(int* depth = nullptr)
+    {
+        if (isEmpty())
+        {
+            return nullptr;
+        }
+
+        QueueNode* temp = frontNode;
+        Airport* airport = temp->data;
+
+        if (depth != nullptr)
+        {
+            *depth = temp->depth;
+        }
+
+        frontNode = frontNode->next;
+
+        if (frontNode == nullptr)
+        {
+            rearNode = nullptr;
+        }
+        
+        delete temp;
+        count--;
+
+        return airport;
+    }
+
+    bool isEmpty() const
+    {
+        return frontNode == nullptr;
+    }
+
+    int size() const
+    {
+        return count;
+    }
+
+    AirportQueue(const AirportQueue&) = delete;
+    AirportQueue& operator=(const AirportQueue&) = delete;
+};
+
+class AirportStack
+{
+private:
+    struct StackNode
+    {
+        Airport* data;
+        StackNode* next;
+
+        StackNode(Airport* airport)
+        {
+            data = airport;
+            next = nullptr;
+        }
+    };
+
+    StackNode* topNode;
+    int count;
+
+public:
+    AirportStack()
+    {
+        topNode = nullptr;
+        count = 0;
+    }
+
+    ~AirportStack()
+    {
+        while (!isEmpty())
+        {
+            pop();
+        }
+    }
+
+    void push(Airport* airport)
+    {
+        StackNode* newNode = new StackNode(airport);
+
+        newNode->next = topNode;
+        topNode = newNode;
+
+        count++;
+    }
+
+    Airport* pop()
+    {
+        if (isEmpty())
+        {
+            return nullptr;
+        }
+
+        StackNode* temp = topNode;
+        Airport* airport = temp->data;
+
+        topNode = topNode->next;
+
+        delete temp;
+        count--;
+
+        return airport;
+    }
+
+    bool isEmpty() const
+    {
+        return topNode == nullptr;
+    }
+
+    int size() const
+    {
+        return count;
+    }
+
+    AirportStack(const AirportStack&) = delete;
+    AirportStack& operator=(const AirportStack&) = delete;
+};
+
 class AirportBST
 {
 private:
@@ -56,8 +227,6 @@ private:
     // Deletion helpers
     Airport* removeHelper(Airport* node, string code);
     Airport* findMinNode(Airport* node);
-
-    // Height and depth helpers
 
     // BST validation
     bool validateHelper(Airport* node, string lo, string hi);
@@ -330,22 +499,21 @@ void AirportBST::clearTree()
         return;
     }
 
-    vector<Airport*> nodes;
-    nodes.push_back(root);
+    AirportStack stack;
+    stack.push(root);
 
-    while (!nodes.empty())
+    while (!stack.isEmpty())
     {
-        Airport* cur = nodes.back();
-        nodes.pop_back();
+        Airport* cur = stack.pop();
 
         if (cur->left != nullptr)
         {
-            nodes.push_back(cur->left);
+            stack.push(cur->left);
         }
 
         if (cur->right != nullptr)
         {
-            nodes.push_back(cur->right);
+            stack.push(cur->right);
         }
 
         delete cur;
@@ -361,29 +529,28 @@ int AirportBST::height()
         return -1;
     }
 
-    queue<Airport*> q;
-    q.push(root);
+    AirportQueue q;
+    q.enqueue(root);
 
     int h = -1;
-    
-    while (!q.empty())
+
+    while (!q.isEmpty())
     {
         int levelSize = q.size();
         h++;
 
         for (int i = 0; i < levelSize; i++)
         {
-            Airport* cur = q.front();
-            q.pop();
+            Airport* cur = q.dequeue();
 
             if (cur->left != nullptr)
             {
-                q.push(cur->left);
+                q.enqueue(cur->left);
             }
 
             if (cur->right != nullptr)
             {
-                q.push(cur->right);
+                q.enqueue(cur->right);
             }
         }
     }
@@ -398,29 +565,28 @@ double AirportBST::averageDepth()
         return 0.0;
     }
 
-    queue<pair<Airport*, int>> q;
-    q.push({root, 0});
+    AirportQueue q;
+    q.enqueue(root, 0);
 
     long long totalDepth = 0;
     int count = 0;
 
-    while (!q.empty())
+    while (!q.isEmpty())
     {
-        Airport* cur = q.front().first;
-        int depth = q.front().second;
-        q.pop();
+        int depth = 0;
+        Airport* cur = q.dequeue(&depth);
 
         totalDepth += depth;
         count++;
 
         if (cur->left != nullptr)
         {
-            q.push({cur->left, depth + 1});
+            q.enqueue(cur->left, depth + 1);
         }
 
         if (cur->right != nullptr)
         {
-            q.push({cur->right, depth + 1});
+            q.enqueue(cur->right, depth + 1);
         }
     }
 
@@ -507,13 +673,12 @@ string AirportBST::findLeaf()
         return "";
     }
 
-    queue<Airport*> q;
-    q.push(root);
+    AirportQueue q;
+    q.enqueue(root);
 
-    while (!q.empty())
+    while (!q.isEmpty())
     {
-        Airport* cur = q.front();
-        q.pop();
+        Airport* cur = q.dequeue();
 
         if (cur->left == nullptr && cur->right == nullptr)
         {
@@ -522,12 +687,12 @@ string AirportBST::findLeaf()
 
         if (cur->left != nullptr)
         {
-            q.push(cur->left);
+            q.enqueue(cur->left);
         }
 
         if (cur->right != nullptr)
         {
-            q.push(cur->right);
+            q.enqueue(cur->right);
         }
     }
 
@@ -626,13 +791,12 @@ string AirportBST::findOnlyRightChild()
         return "";
     }
 
-    queue<Airport*> q;
-    q.push(root);
+    AirportQueue q;
+    q.enqueue(root);
 
-    while (!q.empty())
+    while (!q.isEmpty())
     {
-        Airport* cur = q.front();
-        q.pop();
+        Airport* cur = q.dequeue();
 
         if (cur->left == nullptr && cur->right != nullptr)
         {
@@ -641,12 +805,12 @@ string AirportBST::findOnlyRightChild()
 
         if (cur->left != nullptr)
         {
-            q.push(cur->left);
+            q.enqueue(cur->left);
         }
 
         if (cur->right != nullptr)
         {
-            q.push(cur->right);
+            q.enqueue(cur->right);
         }
     }
 
@@ -677,13 +841,12 @@ string AirportBST::findTwoChildren()
         return "";
     }
 
-    queue<Airport*> q;
-    q.push(root);
+    AirportQueue q;
+    q.enqueue(root);
 
-    while (!q.empty())
+    while (!q.isEmpty())
     {
-        Airport* cur = q.front();
-        q.pop();
+        Airport* cur = q.dequeue();
 
         if (cur->left != nullptr && cur->right != nullptr)
         {
@@ -692,12 +855,12 @@ string AirportBST::findTwoChildren()
 
         if (cur->left != nullptr)
         {
-            q.push(cur->left);
+            q.enqueue(cur->left);
         }
 
         if (cur->right != nullptr)
         {
-            q.push(cur->right);
+            q.enqueue(cur->right);
         }
     }
 
@@ -712,12 +875,12 @@ void AirportBST::printLevelOrder(int maxLevels)
         return;
     }
 
-    queue<Airport*> q;
-    q.push(root);
+    AirportQueue q;
+    q.enqueue(root);
 
     int level = 0;
 
-    while (!q.empty() && level < maxLevels)
+    while (!q.isEmpty() && level < maxLevels)
     {
         int levelSize = q.size();
 
@@ -725,19 +888,18 @@ void AirportBST::printLevelOrder(int maxLevels)
 
         for (int i = 0; i < levelSize; i++)
         {
-            Airport* cur = q.front();
-            q.pop();
+            Airport* cur = q.dequeue();
 
             cout << cur->IATA << " ";
 
             if (cur->left != nullptr)
             {
-                q.push(cur->left);
+                q.enqueue(cur->left);
             }
 
             if (cur->right != nullptr)
             {
-                q.push(cur->right);
+                q.enqueue(cur->right);
             }
         }
 
@@ -1174,7 +1336,7 @@ int main()
     // =========================================================
     cout << "========== TASK 1: LOAD DATA ==========" << endl;
 
-    tree.loadAirports("airports.dat");
+    tree.loadAirports("data/airports.dat");
 
     cout << "BST Validation: "
          << (tree.validate() ? "VALID" : "INVALID") << endl;
@@ -1381,7 +1543,7 @@ int main()
 
     // Create a fresh tree to preserve the original root
     AirportBST rootTest;
-    rootTest.loadAirports("airports.dat");
+    rootTest.loadAirports("data/airports.dat");
 
     cout << "\nBefore root deletion:" << endl;
     rootTest.printLevelOrder();
@@ -1422,7 +1584,7 @@ int main()
 
     // Use a fresh BST so deletion tests do not change traversal results
     AirportBST originalTree;
-    originalTree.loadAirports("airports.dat");
+    originalTree.loadAirports("data/airports.dat");
 
     originalTree.saveInorder("inorder.txt");
     originalTree.savePreorder("preorder.txt");
