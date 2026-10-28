@@ -1,1 +1,188 @@
+# Airport BST Pseudocode
+## 1. Build the BST
+ALGORITHM Build(filename)
+    OPEN filename and read all lines
+    IF file cannot be opened
+        PRINT error
+        RETURN
+    END IF
+    CLEAR existing tree and records
+    SET inserted = 0
+    SET skipped = 0
+    SET duplicates = 0
+    FOR i = 0 TO number of lines - 1
+        PARSE line into CSV fields
+        IF fewer than 8 fields exist
+            INCREMENT skipped
+            CONTINUE
+        END IF
+        EXTRACT IATA code from field 5
+        IF IATA is "\N" OR its length is not 3
+            INCREMENT skipped
+            CONTINUE
+        END IF
+        EXTRACT airport name, city, country,
+                ICAO code, latitude and longitude
+        TRY to convert latitude and longitude to numbers
+        CREATE an Airport record
+        IF Insert(airport) succeeds
+            APPEND airport record to records
+            INCREMENT inserted
+        ELSE
+            INCREMENT duplicates
+        END IF
+        IF conversion fails
+            INCREMENT skipped
+        END TRY
+    END FOR
+    PRINT inserted, skipped and duplicates
+END ALGORITHM
 
+## 2. Insert
+ALGORITHM Insert(airport)
+    IF root is NULL
+        SET root to airport
+        RETURN true
+    END IF
+    SET current to root
+    WHILE current is not NULL
+        IF airport.IATA < current.IATA
+            IF current.left is NULL
+                SET current.left to airport
+                RETURN true
+            END IF
+            SET current to current.left
+        ELSE IF airport.IATA > current.IATA
+            IF current.right is NULL
+                SET current.right to airport
+                RETURN true
+            END IF
+            SET current to current.right
+        ELSE
+            PRINT duplicate IATA code
+            DELETE new airport node
+            RETURN false
+        END IF
+    END WHILE
+    RETURN false
+END ALGORITHM
+
+## 3. Search
+ALGORITHM Search(code)
+    SET current to root
+    SET comparisons = 0
+    WHILE current is not NULL
+        INCREMENT comparisons
+        IF code equals current.IATA
+            PRINT search path and comparisons
+            RETURN current
+        ELSE IF code < current.IATA
+            SET current to current.left
+        ELSE
+            SET current to current.right
+        END IF
+    END WHILE
+    PRINT search path, NULL and comparisons
+    RETURN NULL
+END ALGORITHM
+
+## 4. Delete
+ALGORITHM Delete(node, code)
+    IF node is NULL
+        RETURN NULL
+    END IF
+    IF code < node.IATA
+        SET node.left to Delete(node.left, code)
+    ELSE IF code > node.IATA
+        SET node.right to Delete(node.right, code)
+    ELSE
+        IF node.left is NULL AND node.right is NULL
+            DELETE node
+            RETURN NULL
+        ELSE IF node.right is NULL
+            SET child to node.left
+            DELETE node
+            RETURN child
+        ELSE IF node.left is NULL
+            SET child to node.right
+            DELETE node
+            RETURN child
+        ELSE
+            SET successor to the minimum node
+                in the right subtree
+            COPY successor's airport data into node
+            SET node.right to Delete(
+                node.right, successor.IATA)
+        END IF
+    END IF
+    RETURN node
+END ALGORITHM
+
+## 5. Validate
+ALGORITHM Validate(node, lo, hi)
+    IF node is NULL
+        RETURN true
+    END IF
+    IF lo is not empty AND node.IATA <= lo
+        RETURN false
+    END IF
+    IF hi is not empty AND node.IATA >= hi
+        RETURN false
+    END IF
+    RETURN Validate(node.left, lo, node.IATA)
+           AND Validate(node.right, node.IATA, hi)
+END ALGORITHM
+ALGORITHM CheckBST()
+    RETURN Validate(root, empty lower bound,
+                    empty upper bound)
+END ALGORITHM
+
+## 6. Range Query
+ALGORITHM Range(node, from, to, visited, found)
+    IF node is NULL
+        RETURN
+    END IF
+    INCREMENT visited
+    IF node.IATA > from
+        Range(node.left, from, to, visited, found)
+    END IF
+    IF from <= node.IATA AND node.IATA <= to
+        PRINT node.IATA and airport name
+        INCREMENT found
+    END IF
+    IF node.IATA < to
+        Range(node.right, from, to, visited, found)
+    END IF
+END ALGORITHM
+ALGORITHM RangeQuery(from, to)
+    IF from > to
+        PRINT invalid range
+        RETURN
+    END IF
+    SET visited = 0
+    SET found = 0
+    Range(root, from, to, visited, found)
+    PRINT found and visited
+END ALGORITHM
+
+## 7. Balanced Build
+ALGORITHM BuildBalanced(airports)
+    COPY airports into sortedAirports
+    SORT sortedAirports by IATA code in ascending order
+    CLEAR existing tree and records
+    COPY sorted airport records into records
+    SET root to BalancedBuild(
+        sortedAirports, 0, number of airports - 1)
+END ALGORITHM
+ALGORITHM BalancedBuild(airports, left, right)
+    IF left > right
+        RETURN NULL
+    END IF
+    SET mid = left + floor((right - left) / 2)
+    CREATE node using airports[mid]
+    SET node.left to BalancedBuild(
+        airports, left, mid - 1)
+    SET node.right to BalancedBuild(
+        airports, mid + 1, right)
+    RETURN node
+END ALGORITHM
